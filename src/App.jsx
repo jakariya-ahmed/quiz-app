@@ -7,7 +7,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <main className="pt-16">
+      <main className="">
         <Toaster />
         <AppRoute />
       </main>

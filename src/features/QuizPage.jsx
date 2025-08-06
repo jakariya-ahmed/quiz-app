@@ -11,6 +11,41 @@ const QUESTIONS = [
     options: ["Shakespeare", "Tolstoy", "Hemingway", "Dickens"],
     answer: "Shakespeare",
   },
+    {
+      question: "What is 2 + 2?",
+      options: ["1", "2", "3", "4"],
+      answerIndex: 3,
+    },
+    {
+      question: "What color is the sky?",
+      options: ["Blue", "Green", "Red", "Yellow"],
+      answerIndex: 0,
+    },
+    {
+      question: "What is the capital of France?",
+      options: ["Paris", "London", "Berlin", "Rome"],
+      answerIndex: 0,
+    },
+    {
+    question: "What color is the sky?",
+    options: ["Blue", "Green", "Red", "Yellow"],
+    answerIndex: 0,
+  },
+  {
+    question: "What is the capital of France?",
+    options: ["Paris", "London", "Berlin", "Rome"],
+    answerIndex: 0,
+  },
+  {
+    question: "Which planet is known as the Red Planet?",
+    options: ["Earth", "Venus", "Mars", "Jupiter"],
+    answerIndex: 2,
+  },
+  {
+    question: "What gas do plants absorb from the atmosphere?",
+    options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"],
+    answerIndex: 1,
+  },
   // ... add up to 10 questions here
 ];
 

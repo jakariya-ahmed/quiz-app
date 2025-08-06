@@ -6,6 +6,7 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false); // new state
   const [userName, setUserName] = useState("");
   const userMenuRef = useRef(null);
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ function Navbar() {
       const currentUser = JSON.parse(localStorage.getItem("currentUser"));
       setIsLoggedIn(loginStatus);
       setUserName(currentUser?.email?.split("@")[0] || "User");
+
+      // After page reload, clear justLoggedIn so logout shows correctly
+      setJustLoggedIn(false);
     };
 
     syncAuth();
@@ -40,8 +44,17 @@ function Navbar() {
     localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
+    setJustLoggedIn(false);
     navigate("/");
     window.dispatchEvent(new Event("storage"));
+  };
+
+  // Call this function after a successful login somewhere in your app
+  const handleJustLoggedIn = () => {
+    setIsLoggedIn(true);
+    setJustLoggedIn(true);
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    setUserName(currentUser?.email?.split("@")[0] || "User");
   };
 
   const handleProtectedRoute = (e, path) => {
@@ -55,6 +68,138 @@ function Navbar() {
     setIsMenuOpen(false);
   };
 
+  // Decide what to show for user menu links
+  // If justLoggedIn true => show login/register buttons (per your request)
+  // Else if logged in => show logout/profile
+  // Else show login/register
+
+  const renderUserMenuLinks = () => {
+    if (justLoggedIn) {
+      // Show Login/Register even if logged in
+      return (
+        <>
+          <Link
+            to="/login"
+            className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            Login
+          </Link>
+          <Link
+            to="/register"
+            className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            Register
+          </Link>
+        </>
+      );
+    } else if (isLoggedIn) {
+      // Normal logged in menu
+      return (
+        <>
+          <Link
+            to="/profile"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            Profile
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-red-100 rounded"
+          >
+            Logout
+          </button>
+        </>
+      );
+    } else {
+      // Not logged in
+      return (
+        <>
+          <Link
+            to="/login"
+            className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            Login
+          </Link>
+          <Link
+            to="/register"
+            className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            Register
+          </Link>
+        </>
+      );
+    }
+  };
+
+  // Same logic for mobile menu user section
+  const renderMobileUserLinks = () => {
+    if (justLoggedIn) {
+      return (
+        <>
+          <Link
+            to="/login"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Login
+          </Link>
+          <Link
+            to="/register"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Register
+          </Link>
+        </>
+      );
+    } else if (isLoggedIn) {
+      return (
+        <>
+          <Link
+            to="/profile"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Profile
+          </Link>
+          <button
+            onClick={() => {
+              handleLogout();
+              setIsMenuOpen(false);
+            }}
+            className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-red-100 rounded"
+          >
+            Logout
+          </button>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Link
+            to="/login"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Login
+          </Link>
+          <Link
+            to="/register"
+            className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Register
+          </Link>
+        </>
+      );
+    }
+  };
+
   return (
     <nav className="bg-white shadow-md px-4 py-3 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -65,7 +210,10 @@ function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex space-x-8">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">
+          <Link
+            to="/"
+            className="text-gray-700 hover:text-blue-600 font-medium"
+          >
             Home
           </Link>
           <a
@@ -78,13 +226,16 @@ function Navbar() {
         </div>
 
         {/* Desktop User Section */}
-        <div className="hidden md:flex items-center space-x-4 relative" ref={userMenuRef}>
+        <div
+          className="hidden md:flex items-center space-x-4 relative"
+          ref={userMenuRef}
+        >
           <button
             onClick={() => setIsUserMenuOpen((prev) => !prev)}
             className="flex items-center space-x-2 focus:outline-none"
           >
             <span className="text-gray-700 font-medium cursor-pointer">
-              {isLoggedIn ? userName : "Account"}
+              {isLoggedIn && !justLoggedIn ? userName : "Account"}
             </span>
             <img
               src="https://i.pravatar.cc/40"
@@ -99,65 +250,28 @@ function Navbar() {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
           {isUserMenuOpen && (
             <div className="absolute right-0 mt-10 w-40 bg-white border rounded-md shadow-lg py-2 z-50">
-              {isLoggedIn ? (
-                // <button
-                //   onClick={handleLogout}
-                //   className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-red-100"
-                // >
-                //   Logout
-                // </button>
-
-                <>
-                <Link
-                  to="/profile"
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-                <Link
-                  
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => {
-                  handleLogout();
-                  setIsMenuOpen(false);
-                }}
-                >
-                  Logout
-                </Link>
-              </>
-
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-100"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    Register
-                  </Link>
-                </>
-              )}
+              {renderUserMenuLinks()}
             </div>
           )}
         </div>
 
         {/* Mobile Menu Button */}
         <div className="md:hidden">
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-700 focus:outline-none">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-gray-700 focus:outline-none"
+          >
             <svg
               className="w-6 h-6"
               fill="none"
@@ -165,9 +279,19 @@ function Navbar() {
               viewBox="0 0 24 24"
             >
               {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               )}
             </svg>
           </button>
@@ -191,58 +315,7 @@ function Navbar() {
           >
             Quiz
           </a>
-          <div className="border-t border-gray-200 pt-2">
-            {isLoggedIn ? (
-              
-              // <button
-                // onClick={() => {
-                //   handleLogout();
-                //   setIsMenuOpen(false);
-                // }}
-              //   className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-red-100"
-              // >
-              //   Logout
-              // </button>
-
-              <>
-                <Link
-                  to="/profile"
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/logout"
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => {
-                  handleLogout();
-                  setIsMenuOpen(false);
-                }}
-                >
-                  Logout
-                </Link>
-              </>
-              
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="block px-3 py-2 text-gray-700 hover:bg-blue-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
+          <div className="border-t border-gray-200 pt-2">{renderMobileUserLinks()}</div>
         </div>
       )}
     </nav>

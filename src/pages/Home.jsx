@@ -16,7 +16,6 @@ export default function HomePage() {
 
   return (
     <div
-      id="home"
       className="h-screen relative flex items-center justify-center text-center text-white"
       style={{
         backgroundImage:
