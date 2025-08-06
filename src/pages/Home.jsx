@@ -1,6 +1,19 @@
+// src/pages/HomePage.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function HomePage({ onStart }) {
+export default function HomePage() {
+  const navigate = useNavigate();
+
+  const handleStart = () => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (isLoggedIn) {
+      navigate("/quiz");
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <div
       id="home"
@@ -15,7 +28,7 @@ export default function HomePage({ onStart }) {
       <div className="max-w-md p-6 rounded bg-black bg-opacity-30">
         <h1 className="text-4xl font-extrabold mb-6">Let's Start</h1>
         <button
-          onClick={onStart}
+          onClick={handleStart}
           className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded text-lg font-semibold"
         >
           Start Quiz

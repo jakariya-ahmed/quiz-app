@@ -1,107 +1,143 @@
-import React, { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-const quiz = {
-  title: "Sample Quiz",
-  questions: [
-    {
-      question: "What is the capital of France?",
-      options: ["Berlin", "Paris", "Rome", "Madrid"],
-      answerIndex: 1,
-    },
-    {
-      question: "Which planet is known as the Red Planet?",
-      options: ["Earth", "Venus", "Mars", "Jupiter"],
-      answerIndex: 2,
-    },
-    {
-      question: "Who wrote 'Hamlet'?",
-      options: ["Shakespeare", "Tolkien", "Dickens", "Austen"],
-      answerIndex: 0,
-    },
-    {
-      question: "What is 2 + 2?",
-      options: ["3", "4", "5", "6"],
-      answerIndex: 1,
-    },
-    {
-      question: "Which ocean is the largest?",
-      options: ["Atlantic", "Indian", "Arctic", "Pacific"],
-      answerIndex: 3,
-    },
-  ],
-};
+const QUESTIONS = [
+  {
+    question: "What is the capital of France?",
+    options: ["Paris", "London", "Berlin", "Madrid"],
+    answer: "Paris",
+  },
+  {
+    question: "Who wrote 'Hamlet'?",
+    options: ["Shakespeare", "Tolstoy", "Hemingway", "Dickens"],
+    answer: "Shakespeare",
+  },
+  // ... add up to 10 questions here
+];
 
-export default function QuizPage({ onRestart }) {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+const TIME_PER_QUESTION = 15; // seconds
+
+function QuizPage() {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
+  const [showResults, setShowResults] = useState(false);
+  const timerRef = useRef(null);
+  const [resultsSaved, setResultsSaved] = useState(false); // to avoid duplicate saves
 
-  const handleOptionSelect = (index) => {
-    const newAnswers = [...selectedAnswers];
-    newAnswers[currentQuestion] = index;
-    setSelectedAnswers(newAnswers);
+  const currentQuestion = QUESTIONS[currentIndex];
 
-    if (currentQuestion < quiz.questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+  useEffect(() => {
+    // Reset timer whenever question changes
+    setTimeLeft(TIME_PER_QUESTION);
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === 1) {
+          handleNext(null); // Timeout, no answer selected
+          return TIME_PER_QUESTION; // reset timer for next question
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerRef.current);
+  }, [currentIndex]);
+
+  const handleAnswerSelect = (option) => {
+    handleNext(option);
+  };
+
+  const handleNext = (option) => {
+    // Save current question answer (null if timed out)
+    setSelectedAnswers((prev) => [
+      ...prev,
+      { question: currentQuestion.question, selected: option, correct: currentQuestion.answer },
+    ]);
+
+    if (currentIndex + 1 < QUESTIONS.length) {
+      setCurrentIndex(currentIndex + 1);
     } else {
-      setCurrentQuestion(currentQuestion + 1); // show results
+      setShowResults(true);
+      clearInterval(timerRef.current);
     }
   };
 
-  if (currentQuestion >= quiz.questions.length) {
+  const calculateScore = () => {
+    return selectedAnswers.filter((ans) => ans.selected === ans.correct).length;
+  };
+
+  // Save quiz history on first time results show
+  useEffect(() => {
+    if (showResults && !resultsSaved) {
+      const history = JSON.parse(localStorage.getItem("quizHistory")) || [];
+      const newAttempt = {
+        date: new Date().toISOString(),
+        score: calculateScore(),
+        total: QUESTIONS.length,
+        answers: selectedAnswers,
+      };
+      history.push(newAttempt);
+      localStorage.setItem("quizHistory", JSON.stringify(history));
+      setResultsSaved(true);
+    }
+  }, [showResults, resultsSaved, selectedAnswers]);
+
+  if (showResults) {
     return (
-      <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow-md">
-        <h2 className="text-2xl font-bold mb-6">Quiz Results</h2>
-        {quiz.questions.map((q, i) => {
-          const userAnswer = selectedAnswers[i];
-          const correctAnswer = q.answerIndex;
-          const isCorrect = userAnswer === correctAnswer;
-          return (
-            <div key={i} className="mb-4 border-b pb-3">
-              <p className="font-semibold">{q.question}</p>
+      <div className="max-w-3xl mx-auto p-6 mt-10 bg-white rounded shadow">
+        <h2 className="text-3xl font-bold mb-6 text-center">Quiz Results</h2>
+        <p className="text-center mb-4 text-lg">
+          Your score:{" "}
+          <span className="font-semibold text-green-600">{calculateScore()} / {QUESTIONS.length}</span>
+        </p>
+
+        <div className="space-y-4">
+          {selectedAnswers.map(({ question, selected, correct }, idx) => (
+            <div key={idx} className="p-4 border rounded">
+              <p className="font-semibold">{idx + 1}. {question}</p>
               <p>
                 Your answer:{" "}
-                <span className={isCorrect ? "text-green-600" : "text-red-600"}>
-                  {userAnswer !== undefined ? q.options[userAnswer] : "No answer selected"}
+                <span className={selected === correct ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                  {selected || <em>Not answered</em>}
                 </span>
               </p>
-              {!isCorrect && (
-                <p className="text-green-600">
-                  Correct answer: {q.options[correctAnswer]}
-                </p>
+              {selected !== correct && (
+                <p>Correct answer: <span className="text-green-600 font-semibold">{correct}</span></p>
               )}
             </div>
-          );
-        })}
-        <button
-          onClick={onRestart}
-          className="mt-6 px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Restart Quiz
-        </button>
+          ))}
+        </div>
       </div>
     );
   }
 
-  const question = quiz.questions[currentQuestion];
-
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow-md">
-      <h2 className="text-xl font-bold mb-4">{quiz.title}</h2>
-      <p className="mb-4">{question.question}</p>
-      <div className="flex flex-col gap-3">
-        {question.options.map((option, idx) => (
+    <div className="max-w-3xl mx-auto p-6 mt-10 bg-white rounded shadow">
+      <div className="flex justify-between mb-4">
+        <h2 className="text-xl font-semibold">
+          Question {currentIndex + 1} of {QUESTIONS.length}
+        </h2>
+        <div className="text-gray-600 font-mono">{timeLeft}s</div>
+      </div>
+
+      <div className="mb-6">
+        <p className="text-lg font-medium">{currentQuestion.question}</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {currentQuestion.options.map((option) => (
           <button
-            key={idx}
-            onClick={() => handleOptionSelect(idx)}
-            className="p-3 border rounded hover:bg-blue-100 text-left transition"
+            key={option}
+            onClick={() => handleAnswerSelect(option)}
+            className="w-full text-left p-3 border rounded hover:bg-blue-100 transition"
           >
             {option}
           </button>
         ))}
       </div>
-      <p className="mt-4 text-sm text-gray-600">
-        Question {currentQuestion + 1} of {quiz.questions.length}
-      </p>
     </div>
   );
 }
+
+export default QuizPage;

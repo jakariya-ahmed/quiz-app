@@ -1,20 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import QuizPage from "./features/QuizPage";
+import AppRoute from "./routes/AppRoutes";
+import { Toaster } from "./components/Toaster";
 
 export default function App() {
-  const [quizStarted, setQuizStarted] = useState(false);
-
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
       <main className="pt-16">
-        {!quizStarted ? (
-          <Home onStart={() => setQuizStarted(true)} />
-        ) : (
-          <QuizPage onRestart={() => setQuizStarted(false)} />
-        )}
+        <Toaster />
+        <AppRoute />
       </main>
     </div>
   );
